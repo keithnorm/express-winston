@@ -24,6 +24,23 @@ var chalk = require('chalk');
 
 var _ = require('lodash');
 
+_.mixin({
+  omitDeep: function(obj, blackList) {
+    if (!_.isArray(blackList)) {
+      throw new Error("deepOmit(): argument must be an Array");
+    }
+    var copy = _.omit(obj, blackList);
+    _.each(blackList, function(arg) {
+      if (arg.indexOf('.') > -1) {
+        var key  = _.first(arg.split('.'));
+        var last = arg.split('.').slice(1);
+        copy[key] = _.omitDeep(copy[key], [last.join('.')]);
+      }
+    });
+    return copy;
+  }
+});
+
 /**
  * A default list of properties in the request object that are allowed to be logged.
  * These properties will be safely included in the meta of the log.
@@ -254,7 +271,7 @@ exports.logger = function logger(options) {
               if ( req.body !== undefined ) {
                   if (blacklist.length > 0 && bodyWhitelist.length === 0) {
                     var whitelist = _.difference(Object.keys(req.body), blacklist);
-                    filteredBody = filterObject(req.body, whitelist, options.requestFilter);
+                    filteredBody = filterObject(_.omitDeep(req.body, blacklist), whitelist, options.requestFilter);
                   } else if (
                     requestWhitelist.indexOf('body') !== -1 &&
                     bodyWhitelist.length === 0 &&

@@ -483,6 +483,22 @@ describe('express-winston', function () {
       });
     });
 
+    it('should support nested properties in bodyBlacklist', function() {
+      var originalBlacklist = expressWinston.bodyBlacklist;
+      expressWinston.bodyBlacklist = ['foo.bar.secretProp'];
+
+      var options = {
+        req: {body: {foo: {bar: {secretProp: 'hey', safeProp: 'ok'}}, baz: 'qux'}}
+      };
+      return loggerTestHelper(options).then(function (result) {
+        // Return to the original value for later tests
+        expressWinston.bodyBlacklist = originalBlacklist;
+
+        result.log.meta.req.body.foo.bar.should.not.have.property('secretProp');
+        result.log.meta.req.body.foo.bar.should.have.property('safeProp');
+      });
+    });
+
     it('should use the exported responseWhitelist', function() {
       var originalWhitelist = expressWinston.responseWhitelist;
       expressWinston.responseWhitelist = ['foo'];
